@@ -6,12 +6,16 @@
 
 import React, { Component } from 'react';
 import Animation from 'lottie-react-native';
+import Picker from './Picker';
 import {
   AppRegistry,
   StyleSheet,
   Text,
   View,
-  Animated
+  Animated,
+  Button,
+  Dimensions,
+  Slider
 } from 'react-native';
 
 const makeExample = (name, getJson) => ({ name, getJson });
@@ -26,7 +30,6 @@ const EXAMPLES = [
   makeExample('Watermelon', () => require('./animations/Watermelon.json')),
   makeExample('Motion Corpse', () => require('./animations/MotionCorpse-Jrcanest.json')),
 ].reduce((acc, e) => {
-  // eslint-disable-next-line no-param-reassign
   acc[e.name] = e;
   return acc;
 }, {});
@@ -35,12 +38,19 @@ export default class rnAnimateTest extends Component {
   constructor (props) {
     super(props);
     this.state = {
+      example: Object.keys(EXAMPLES)[0],
       progress: new Animated.Value(0),
       config: {
         duration: 3000,
         imperative: false,
       },
     };
+
+    this.reRunAnimate = this.reRunAnimate.bind(this);
+    this.setAnim = this.setAnim.bind(this);
+    this.randomAnimate = this.randomAnimate.bind(this);
+    this.pauseAnimate = this.pauseAnimate.bind(this);
+    this.updateProgress = this.updateProgress.bind(this);
   }
 
   runAnimate () {
@@ -50,31 +60,83 @@ export default class rnAnimateTest extends Component {
     }).start();
   }
 
+  reRunAnimate () {
+    this.state.progress.setValue(1);
+    Animated.timing(this.state.progress, {
+      toValue: 0,
+      duration: this.state.config.duration
+    }).start(({finished}) => {
+      if (finished) this.forceUpdate();
+    });
+  }
+
   componentDidMount () {
+    // this.anim.play();
     this.runAnimate.bind(this)();
+  }
+
+  randomAnimate () {
+    this.setState({
+      example: Object.keys(EXAMPLES)[Math.floor(Math.random() * 9)]
+    });
+    this.reRunAnimate();
+  }
+
+  pauseAnimate () {
+    this.anim.stop();
+  }
+
+  updateProgress (progress) {
+    this.state.progress.setValue(progress);
+  }
+
+  setAnim (anim) {
+    this.anim = anim;
   }
 
   render() {
     return (
       <View style={styles.container}>
-        <Animation style={{
-            width: 100,
-            height: 100
-          }}
-          source={EXAMPLES['Hamburger Arrow'].getJson()}
-          progress={this.state.progress}
-          onclick={() => {this.setState({progress: new Animated.Value(0)}); this.runAnimate.bind(this)()}}
-        />
-        <Text style={styles.welcome}>
-          Welcome to React Native!
-        </Text>
-        <Text style={styles.instructions}>
-          To get started, edit index.ios.js
-        </Text>
-        <Text style={styles.instructions}>
-          Press Cmd+R to reload,{'\n'}
-          Cmd+D or shake for dev menu
-        </Text>
+        <View
+          style={{
+          flex: 1,
+          justifyContent: 'center',
+          alignItems: 'center',
+          borderColor: '#000',
+          borderBottomWidth: 1,
+          marginVertical: 10,
+        }}>
+          <Animation 
+            ref={this.setAnim}
+            style={{
+              width: Dimensions.get('window').width,
+              height: Dimensions.get('window').height - 320
+            }}
+            source={EXAMPLES[this.state.example].getJson()}
+            progress={this.state.progress}
+          />
+        </View>
+        <View style={StyleSheet.absoluteFill, {
+          height: 320,
+          backgroundColor: '#fff',
+          borderColor: '#000',
+          flex: 1,
+          justifyContent: 'center',
+          width: 300
+        }}>
+          <Slider
+            minimumValue={0}
+            maximumValue={1}
+            value={this.state.progress.__getValue()}
+            onValueChange={this.updateProgress} />
+          <Picker
+            example={this.state.example}
+            examples={EXAMPLES}
+            onChange={(example) => {this.setState({example});this.reRunAnimate(); }} />
+          <Button title="Random" onPress={this.randomAnimate} />
+          <Button title="Rerun" onPress={this.reRunAnimate} />
+          <Button title="Pause" onPress={this.pauseAnimate} />
+        </View>
       </View>
     );
   }
@@ -85,7 +147,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5FCFF',
+    backgroundColor: '#ffffff',
   },
   welcome: {
     fontSize: 20,
